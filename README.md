@@ -1,2 +1,2 @@
 # naelob
-matrix client bot with elo rating system for chess
+matrix client bot with elo rating system for Nachtasyl-chess 
