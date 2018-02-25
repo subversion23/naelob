@@ -25,8 +25,8 @@ def execute_q(query,data=""):
 
 def create_db():
     query = ('CREATE TABLE IF NOT EXISTS players(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
-             'name TEXT NOT NULL, matrix_name TEXT, points INTEGER NOT NULL, game_verfication BOOL,'
-             'created_by TEXT, created_at TEXT, aliases TEXT);')
+             'name TEXT NOT NULL, matrix_name TEXT, points INTEGER NOT NULL,'
+             'created_by TEXT, created_at TEXT);')
     execute_q(query)
 
     query = ('CREATE TABLE IF NOT EXISTS games(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
@@ -144,7 +144,7 @@ def get_elolist():
     return text
 
 
-def get_games(number=5):
+def get_games(number=5,player=None):
     query='SELECT white_id,black_id,result,date,id from games ORDER BY date DESC LIMIT ?'
     games = execute_q(query,(number,))
     players = execute_q("SELECT id,name from players")
