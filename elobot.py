@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from matrix_client.client import MatrixClient
+from matrix_python_sdk.matrix_client.client import MatrixClient
 import db_helper
 from logger import log
 import time
@@ -113,10 +113,16 @@ def parse_msg(sender,msg):
 
             myroom.send_text(msg_result+"\n"+add_result)
 
+def listenhandler(err):
+    log(err.msg)
 
 myroom.send_text("Naelob returns!")
 myroom.add_listener(on_message)
-client.start_listener_thread()
+
+try:
+    client.start_listener_thread(exception_handler=listenhandler)
+except Exception as e:
+    print("Aha! "+ e.args)
 
 try:
     get_input = raw_input
@@ -124,18 +130,19 @@ except NameError:
     get_input = input
 
 #====== MAIN LOOP: ==========
-while True:
+bRun = True
+while bRun:
     msg = get_input()
     #TEST
-    time.sleep(0.5)
+    #time.sleep(0.5)
     if msg == "/quit":
-        break
+        bRun=False
     #else:
     #    myroom.send_text(msg)
 
 client.stop_listener_thread()
 myroom.send_text("Naelob verabschiedet sich und geht offline.")
-
+print ("und aus")
 client.logout()
 
 
