@@ -69,9 +69,9 @@ def calc_elo(w_elo,b_elo,result):
     EwW = 1/ (1 + 10**((b_elo-w_elo)/400))
     #EwB = 1/ (1 + 10**((w_elo-b_elo)/400)) #brauch ich das?
     k = 36 #const factor
-    new_w_elo = k * (result-EwW)
-    new_b_elo = new_w_elo *(-1)
-    return new_w_elo,new_b_elo
+    w_change = k * (result-EwW)
+    b_change = w_change *(-1)
+    return round(w_change),round(b_change)
 
 
     #TODO make sure game is valid and verified.
@@ -92,31 +92,17 @@ def add_game(white,black,result,creator,comment=""):
     #Add Game
     query = ('INSERT INTO games(white_id,black_id,result,comment,date,creator_id) VALUES(?,?,?,?,?,?);')
     execute_q(query,(w_id,b_id,result,comment,dt,creator_id))
-    #TODO improve result eval
 
-    #Erwartungswert Weiss:
-    EW = 1/ (1 + 10**((b_elo-w_elo)/400))
-    EB = 1/ (1 + 10**((w_elo-b_elo)/400))
-    #Anpassung der Elo-Zahl:
-    k = 36 #const factor
-
-    w_elo_change =  k *(result-EW)
-    new_w_elo = w_elo + w_elo_change#Neue Elo für weiß
-    #Eintragen:
-    update_elo(w_id,round(new_w_elo))
-
-    #Turn result for black TODO: better solution
-    if result == 0:
-        result = 1
-    elif result == 1:
-        result = 0
-
-    b_elo_change = k *(result-EB)
-    new_b_elo = b_elo + b_elo_change # neue Elo für schwarz
-    update_elo(b_id,round(new_b_elo))
-    #w_elo = execute_q("SELECT )
     #calc new elo
-    return ("Punkte Änderung weiß: {0}  schwarz: {1}".format(round(w_elo_change),round(b_elo_change)))
+    w_chg,b_chg= calc_elo(w_elo,b_elo,result)
+    new_w_elo = w_elo + w_chg
+    new_b_elo = b_elo + b_chg
+
+    update_elo(w_id,new_w_elo)
+    update_elo(b_id,new_b_elo)
+    #w_elo = execute_q("SELECT )
+
+    return ("Punkte Änderung weiß: {0}  schwarz: {1}".format(w_chg,b_chg))
 
 
 def update_elo(player_id,points):
@@ -159,8 +145,13 @@ def get_games(number=5,player=None):
     return result
 
 
-def tests():
-    pass
+def rebuild_list():
+    query='SELECT white_id,black_id,result,date,id,comment from games ORDER BY date ASC'
+    games = execute_q(query,(number,))
+    players = execute_q("SELECT id,name from players")
+
+
+
 
 
 
