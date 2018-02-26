@@ -36,8 +36,6 @@ Partie eintragen:
 #    def send_text(text):
 #        print(text)
 
-
-
 def on_message(room,event):
     if event['type'] == "m.room.member":
         if event['membership'] == "join":
@@ -71,12 +69,13 @@ def parse_cmd(sender,cmd):
             myroom.send_text(help_text)
             return
 
-        elif "stats" in cmd or "list" in cmd:
+        elif cmd.startswith("stats") or cmd.startswith("list"):
             liste = db_helper.get_elolist()
             myroom.send_text("{0}".format(liste))
             return
 
-        elif "games" in cmd:
+        elif cmd.startswith("games"):
+
             myroom.send_text(db_helper.get_games())
             return
 

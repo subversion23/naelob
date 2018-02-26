@@ -66,12 +66,11 @@ def check_add_game(white,black,result,creator,comment):
 
 def calc_elo(w_elo,b_elo,result):
     #Erwartungswert Weiss:
-    EW = 1/ (1 + 10**((b_elo-w_elo)/400))
-    EB = 1/ (1 + 10**((w_elo-b_elo)/400))
-    #Anpassung der Elo-Zahl:
+    EwW = 1/ (1 + 10**((b_elo-w_elo)/400))
+    #EwB = 1/ (1 + 10**((w_elo-b_elo)/400)) #brauch ich das?
     k = 36 #const factor
-    new_w_elo = k * (result-EW)
-    new_b_elo = k * (result-EB)
+    new_w_elo = k * (result-EwW)
+    new_b_elo = new_w_elo *(-1)
     return new_w_elo,new_b_elo
 
 
@@ -135,6 +134,7 @@ def get_elolist():
         text +=  "{0}. {1}  -  {2} Punkte\n".format(i,e[0],e[1])
         i+=1
     #TODO Make HTML table
+    html = ""
     return text
 
 
