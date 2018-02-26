@@ -3,6 +3,7 @@ from matrix_python_sdk.matrix_client.client import MatrixClient
 import db_helper
 from logger import log
 import time
+import re
 from config import user,password,room_id
 
 
@@ -29,6 +30,12 @@ Partie eintragen:
 #    - addplayer can map to matrix_name + "!addme" cmd
 #    - num games - remove game by num if sender is player or creator
 #    - create new elo list from games history
+#    - comments: @mom. in games. --> put to own table ?
+
+#class myroom():
+#    def send_text(text):
+#        print(text)
+
 
 
 def on_message(room,event):
@@ -39,21 +46,28 @@ def on_message(room,event):
         if event['content']['msgtype'] == "m.text":
             log("{0}: {1}".format(event['sender'], event['content']['body']))
             #parse here
-            parse_msg(event['sender'],event['content']['body'])
+            msg = event['content']['body']
+            sender = event['sender']
+            log(msg)
+            msg = msg.strip().lower() #TODO comments NOT
+            #msg: !elo W-B p
+            if msg.startswith("!elo"):
+                cmd = msg.replace("!elo","").lstrip()
+                parse_cmd(sender,cmd)
+            elif msg.startswith("!"):
+                cmd = msg.replace("!","").lstrip()
+                parse_cmd(sender,cmd)
     else:
         log(event['type'])
 
 #TODO: super ql: eigener thread - weil hier listener o. db steht, oder?
-def parse_msg(sender,msg):
-    msg = msg.strip().lower()
-    #msg: !elo W-B p
-    if msg.startswith("!elo"):
-        cmd = msg.replace("!elo","").strip()
+def parse_cmd(sender,cmd):
 
         #Check for cmds
         #Regex?!! REGEX!!!!!!!!
+        #r" *!elo (?P<white>) ?- ?(?P<black>) ","!elo a-b 1 bla bla"
         log("cmd:"+cmd)
-        if "help" in cmd:
+        if  cmd.startswith("help"): # in cmd:
             myroom.send_text(help_text)
             return
 
@@ -79,16 +93,17 @@ def parse_msg(sender,msg):
         #cmd = new game TODO: Error handling!
         elif cmd == "":
             myroom.send_text("JA?")
-
-        else:
-            try:
-                wb,result = cmd.strip().split(" ")
-                white, black = wb.split("-")
-            except ValueError:
+        else: #cmd Processing:
+            #(?P<white>) ?- ?(?P<black>)
+            p = re.compile("(?P<white>\w+) *- *(?P<black>\w+) +(?P<result>\S{1,3}) *(?P<comment>.*$)")
+            m = p.search(cmd)
+            if m == None:
                 myroom.send_text("Fehler!")
+                log("Fehler in cmd parse. cmd:" + cmd)
                 return
+            else:
+                white,black,result,comment = m.groups()
 
-            log(wb+" "+result)
             msg_result = "Partie {0} (weiß)  gegen {1} (schwarz): ".format(white,black)
 
             if result == "1":
@@ -106,7 +121,7 @@ def parse_msg(sender,msg):
                 return
 
             #TODO cast result to float
-            add_result = db_helper.check_add_game(white,black,result,sender)
+            add_result = db_helper.check_add_game(white,black,result,sender,comment)
 
             myroom.send_text(msg_result+"\n"+add_result)
 

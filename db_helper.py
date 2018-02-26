@@ -48,23 +48,18 @@ def create_player(name,creator=None):
 def player_exists(player):
     query = 'SELECT name from players;'
     players = execute_q(query)
-    print (players)
     if player in [j for i in players for j in i]:
         return True
     else:
         return False
-#    if player in [j for i in players for j in i]:
-#        return True
-#    else:
-#        return False
 
 
-def check_add_game(white,black,result,creator):
+def check_add_game(white,black,result,creator,comment):
     #TODO check if players exists and if wants to validate
 
     if player_exists(white) and player_exists(black):
     #TODO ...if good:
-        return add_game(white,black,result,creator)
+        return add_game(white,black,result,creator,comment)
     else:
         return "fehler bei check_add_game()"
 
@@ -75,12 +70,13 @@ def calc_elo(w_elo,b_elo,result):
     EB = 1/ (1 + 10**((w_elo-b_elo)/400))
     #Anpassung der Elo-Zahl:
     k = 36 #const factor
-    elo_change =  k *(result-EW)
-    #TODO...
-    return elo_change
+    new_w_elo = k * (result-EW)
+    new_b_elo = k * (result-EB)
+    return new_w_elo,new_b_elo
+
 
     #TODO make sure game is valid and verified.
-def add_game(white,black,result,creator):
+def add_game(white,black,result,creator,comment=""):
     #Get creator:
     #query = ('SELECT id FROM players WHERE name = \"{}\"'.format(creator))
     #creator_id = execute_q(query)[0][0]
@@ -95,8 +91,8 @@ def add_game(white,black,result,creator):
 
 
     #Add Game
-    query = ('INSERT INTO games(white_id,black_id,result,date,creator_id) VALUES(?,?,?,?,?);')
-    execute_q(query,(w_id,b_id,result,dt,creator_id))
+    query = ('INSERT INTO games(white_id,black_id,result,comment,date,creator_id) VALUES(?,?,?,?,?,?);')
+    execute_q(query,(w_id,b_id,result,comment,dt,creator_id))
     #TODO improve result eval
 
     #Erwartungswert Weiss:
@@ -143,7 +139,7 @@ def get_elolist():
 
 
 def get_games(number=5,player=None):
-    query='SELECT white_id,black_id,result,date,id from games ORDER BY date DESC LIMIT ?'
+    query='SELECT white_id,black_id,result,date,id,comment from games ORDER BY date DESC LIMIT ?'
     games = execute_q(query,(number,))
     players = execute_q("SELECT id,name from players")
     players = {a:b for a,b in players}
@@ -154,9 +150,10 @@ def get_games(number=5,player=None):
         g_result = g[2]
         date = g[3][:16]
         g_id = g[4]
+        comment = g[5]
         date = datetime.datetime.strptime(date,"%Y-%m-%d %H:%M")
         date = date.strftime("%d.%m.%Y - %H:%M")
-        result += ('{0} gegen {1}   Ergebnis: {2} am {3} Uhr  [{4}]\n'.format(w,b,g_result,date,g_id))
+        result += ('{0} gegen {1}   Ergebnis: {2} am {3} Uhr - {5} - [{4}] \n'.format(w,b,g_result,date,g_id,comment))
 
     #playerid to name
     return result
