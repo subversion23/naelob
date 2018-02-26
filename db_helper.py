@@ -35,30 +35,28 @@ def create_db():
     execute_q(query)
 
 
-def create_player(name,aliases="",creator=None):
+def create_player(name,creator=None):
     dt = datetime.datetime.now()
-
-    if player_exists(name): #TODO or in aliases
+    if player_exists(name):
         return False
-    if aliases != "":
-        query = 'INSERT INTO players(name,points,created_at,aliases) VALUES(?,1500,?,?);'
-        execute_q(query,(name,dt,aliases))
     else:
         query = 'INSERT INTO players(name,points,created_at) VALUES(?,1500,?);'
         execute_q(query,(name,dt))
-
     return True
 
 
 def player_exists(player):
-    query = 'SELECT name, aliases from players;'
+    query = 'SELECT name from players;'
     players = execute_q(query)
-    #print (players)
-    #TODO search aliasies! AP:sql?
+    print (players)
     if player in [j for i in players for j in i]:
         return True
     else:
         return False
+#    if player in [j for i in players for j in i]:
+#        return True
+#    else:
+#        return False
 
 
 def check_add_game(white,black,result,creator):

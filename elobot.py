@@ -16,7 +16,7 @@ Partie eintragen:
 
 !elo stats, liste = ruft die aktuelle Rangliste ab
 
-!elo addplayer <name> <aliases>
+!elo addplayer <name>
 
 !elo games  - gibt eine Liste der letzten 5 Spiele zurück
 '''
@@ -69,11 +69,8 @@ def parse_msg(sender,msg):
         elif cmd.startswith("addplayer"):
             playerdata = cmd.split(' ')
             name = playerdata[1]
-            aliases = ""
-            if len(playerdata) > 2:
-                aliases = playerdata[2]
 
-            if db_helper.create_player(name,aliases,sender):
+            if db_helper.create_player(name,sender):
                 myroom.send_text("Neuen Spieler {} erstellt.".format(name))
             else:
                 myroom.send_text("Fehler beim erstellen von neuen Spieler {}.".format(name))
@@ -114,7 +111,7 @@ def parse_msg(sender,msg):
             myroom.send_text(msg_result+"\n"+add_result)
 
 def listenhandler(err):
-    log(err.msg)
+    log(err.args)
 
 myroom.send_text("Naelob returns!")
 myroom.add_listener(on_message)
