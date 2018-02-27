@@ -72,6 +72,7 @@ def parse_cmd(sender,cmd):
         elif cmd.startswith("stats") or cmd.startswith("list"):
             liste = db_helper.get_elolist()
             myroom.send_text("{0}".format(liste))
+            #myroom.send_html(liste)
             return
 
         elif cmd.startswith("games"):
@@ -88,6 +89,13 @@ def parse_cmd(sender,cmd):
             else:
                 myroom.send_text("Fehler beim erstellen von neuen Spieler {}.".format(name))
             return
+        elif cmd.startswith("delgame"):
+            try:
+                g_id = cmd.split()[1]
+            except ValueError:
+                myroom.send_text("Fehler bei cmd parse")
+            if (db_helper.remove_game(g_id)):
+                myroom.send_text("Spiel {0} aus der Wertung entfernt.".format(g_id))
 
         #cmd = new game TODO: Error handling!
         elif cmd == "":
@@ -97,7 +105,7 @@ def parse_cmd(sender,cmd):
             p = re.compile("(?P<white>\w+) *- *(?P<black>\w+) +(?P<result>\S{1,3}) *(?P<comment>.*$)")
             m = p.search(cmd)
             if m == None:
-                myroom.send_text("Fehler!")
+                myroom.send_text("Fehler in cmd parse")
                 log("Fehler in cmd parse. cmd:" + cmd)
                 return
             else:
@@ -125,7 +133,7 @@ def parse_cmd(sender,cmd):
             myroom.send_text(msg_result+"\n"+add_result)
 
 def listenhandler(err):
-    log(err.args)
+    log("error aus listenhandler:" +str(err.args))
 
 myroom.send_text("Naelob returns!")
 myroom.add_listener(on_message)

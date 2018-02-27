@@ -2,6 +2,7 @@
 import sqlite3
 import datetime
 
+
 def execute_q(query,data=""):
     try:
         con = sqlite3.connect("naelo.db")
@@ -31,7 +32,8 @@ def create_db():
 
     query = ('CREATE TABLE IF NOT EXISTS games(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
              'white_id INTEGER NOT NULL, black_id INTEGER NOT NULL, result REAL NOT NULL,'
-             'comment TEXT, date TEXT NOT NULL, creator_id INTEGER NOT NULL);')
+             'comment TEXT, date TEXT NOT NULL, creator_id INTEGER NOT NULL,'
+             'removed INT DEFAULT 0, removed_by INTEGER, removed_at TEXT);')
     execute_q(query)
 
 
@@ -98,14 +100,14 @@ def add_game(white,black,result,creator,comment=""):
     new_w_elo = w_elo + w_chg
     new_b_elo = b_elo + b_chg
 
-    update_elo(w_id,new_w_elo)
-    update_elo(b_id,new_b_elo)
+    set_elo(w_id,new_w_elo)
+    set_elo(b_id,new_b_elo)
     #w_elo = execute_q("SELECT )
 
     return ("Punkte Änderung weiß: {0}  schwarz: {1}".format(w_chg,b_chg))
 
 
-def update_elo(player_id,points):
+def set_elo(player_id,points):
     query = 'UPDATE players SET points = ? WHERE id = ?;'
     execute_q(query,(points,player_id))
 
@@ -115,17 +117,27 @@ def get_elolist():
     result = execute_q(query)
     result.sort(key=lambda t:t[1],reverse=True)
     text = "Wertung\n\n"
+    html = "<html> Wertung:<br> "
+    html += '''<table>
+    <tr>
+    <th>Platz</th>
+    <th>Name</th>
+    <th>Punkte</th>
+    </tr>
+    '''
+
     i=1
     for e in result:
         text +=  "{0}. {1}  -  {2} Punkte\n".format(i,e[0],e[1])
+        #html += "<tr> <td> {0}</td> <td>{1}</td> <td>{2}Punkte</td> <tr>".format(i,e[0],e[1])
         i+=1
     #TODO Make HTML table
-    html = ""
     return text
+    #return html+"</table></html>"
 
 
 def get_games(number=5,player=None):
-    query='SELECT white_id,black_id,result,date,id,comment from games ORDER BY date DESC LIMIT ?'
+    query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 ORDER BY date DESC LIMIT ?'
     games = execute_q(query,(number,))
     players = execute_q("SELECT id,name from players")
     players = {a:b for a,b in players}
@@ -146,9 +158,46 @@ def get_games(number=5,player=None):
 
 
 def rebuild_list():
-    query='SELECT white_id,black_id,result,date,id,comment from games ORDER BY date ASC'
-    games = execute_q(query,(number,))
-    players = execute_q("SELECT id,name from players")
+    query='SELECT white_id,black_id,result,date from games WHERE removed = 0 ORDER BY date ASC'
+    games = execute_q(query)
+    players = execute_q("SELECT id,points,name from players")
+    playernames = {a:n for a,b,n in players}
+    players = {a:1500 for a,b,n in players}
+    for game in games:
+        w = game[0]
+        b = game[1]
+        r = game[2]
+        elo_w = players[w]
+        elo_b = players[b]
+        w_chg,b_chg = calc_elo(elo_w, elo_b, r)
+        players[w] += w_chg
+        players[b] += b_chg
+
+    for i,p in players.items():
+        set_elo(i,p)
+    #print (playernames)
+    return players
+
+
+def remove_game(game_id,mxid=1):
+    dt = datetime.datetime.now()
+    query='UPDATE games SET removed = 1, removed_at=?, removed_by=? where id=?'
+    execute_q(query,(dt,mxid,game_id))
+    rebuild_list()
+    return True
+
+def remove_player(player_id):
+    query="SELECT id FROM games WHERE white_id=? OR black_id=?"
+    games = execute_q(query,(player_id,player_id))
+    print (games)
+    #if games == 1:
+    #    remove_game(games)
+    for g in games:
+        remove_game(g[0])
+    #rebuild_list() #comment here in and out in remove_game
+
+
+
 
 
 
