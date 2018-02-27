@@ -89,12 +89,13 @@ def parse_cmd(sender,cmd):
             else:
                 myroom.send_text("Fehler beim erstellen von neuen Spieler {}.".format(name))
             return
+
         elif cmd.startswith("delgame"):
             try:
                 g_id = cmd.split()[1]
             except ValueError:
                 myroom.send_text("Fehler bei cmd parse")
-            if (db_helper.remove_game(g_id)):
+            if (db_helper.remove_game(g_id,sender)):
                 myroom.send_text("Spiel {0} aus der Wertung entfernt.".format(g_id))
 
         #cmd = new game TODO: Error handling!

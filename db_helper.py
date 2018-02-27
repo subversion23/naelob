@@ -32,18 +32,18 @@ def create_db():
 
     query = ('CREATE TABLE IF NOT EXISTS games(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
              'white_id INTEGER NOT NULL, black_id INTEGER NOT NULL, result REAL NOT NULL,'
-             'comment TEXT, date TEXT NOT NULL, creator_id INTEGER NOT NULL,'
-             'removed INT DEFAULT 0, removed_by INTEGER, removed_at TEXT);')
+             'comment TEXT, date TEXT NOT NULL, creator TEXT NOT NULL,'
+             'removed INT DEFAULT 0, removed_by TEXT, removed_at TEXT);')
     execute_q(query)
 
 
-def create_player(name,creator=None):
+def create_player(name,creator="system"):
     dt = datetime.datetime.now()
     if player_exists(name):
         return False
     else:
-        query = 'INSERT INTO players(name,points,created_at) VALUES(?,1500,?);'
-        execute_q(query,(name,dt))
+        query = 'INSERT INTO players(name,points,created_at, created_by) VALUES(?,1500,?,?);'
+        execute_q(query,(name,dt,creator))
     return True
 
 
@@ -82,7 +82,7 @@ def add_game(white,black,result,creator,comment=""):
     #query = ('SELECT id FROM players WHERE name = \"{}\"'.format(creator))
     #creator_id = execute_q(query)[0][0]
     #DEBUG: =1 until db stores Matrix Names and creator can match:
-    creator_id=1
+    #creator_id=1
 
     dt = datetime.datetime.now() #TODO  datetime sollte bei checkgame gemerkt werden und hier übernommen. -> DB
     #get Players Points from db
@@ -92,8 +92,8 @@ def add_game(white,black,result,creator,comment=""):
 
 
     #Add Game
-    query = ('INSERT INTO games(white_id,black_id,result,comment,date,creator_id) VALUES(?,?,?,?,?,?);')
-    execute_q(query,(w_id,b_id,result,comment,dt,creator_id))
+    query = ('INSERT INTO games(white_id,black_id,result,comment,date,creator) VALUES(?,?,?,?,?,?);')
+    execute_q(query,(w_id,b_id,result,comment,dt,creator))
 
     #calc new elo
     w_chg,b_chg= calc_elo(w_elo,b_elo,result)
@@ -179,10 +179,10 @@ def rebuild_list():
     return players
 
 
-def remove_game(game_id,mxid=1):
+def remove_game(game_id,sender="system"):
     dt = datetime.datetime.now()
     query='UPDATE games SET removed = 1, removed_at=?, removed_by=? where id=?'
-    execute_q(query,(dt,mxid,game_id))
+    execute_q(query,(dt,sender,game_id))
     rebuild_list()
     return True
 
