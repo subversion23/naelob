@@ -141,7 +141,7 @@ def get_games(number=5,player=None):
     games = execute_q(query,(number,))
     players = execute_q("SELECT id,name from players")
     players = {a:b for a,b in players}
-    result = ""
+    result_list = []
     for g in games:
         w = players[g[0]]
         b = players[g[1]]
@@ -151,10 +151,10 @@ def get_games(number=5,player=None):
         comment = g[5]
         date = datetime.datetime.strptime(date,"%Y-%m-%d %H:%M")
         date = date.strftime("%d.%m.%Y - %H:%M")
-        result += ('{0} gegen {1}   Ergebnis: {2} am {3} Uhr - {5} - [{4}] \n'.format(w,b,g_result,date,g_id,comment))
+        result_list.append('{0} gegen {1}   Ergebnis: {2} am {3} Uhr - {5} - [{4}]'.format(w,b,g_result,date,g_id,comment))
 
     #playerid to name
-    return result
+    return '\n'.join(result_list)
 
 
 def rebuild_list():
