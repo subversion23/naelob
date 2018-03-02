@@ -2,7 +2,6 @@
 from matrix_python_sdk.matrix_client.client import MatrixClient
 import db_helper
 from logger import log
-import time
 import re
 from config import user,password,room_id
 
@@ -56,11 +55,8 @@ def on_message(room,event):
     else:
         log(event['type'])
 
-#TODO: super ql: eigener thread - weil hier listener o. db steht, oder?
 def parse_cmd(sender,cmd):
-
         #Check for cmds
-        #Regex?!! REGEX!!!!!!!!
         #r" *!elo (?P<white>) ?- ?(?P<black>) ","!elo a-b 1 bla bla"
         log("cmd:"+cmd)
         if  cmd.startswith("help"): # in cmd:
@@ -129,8 +125,10 @@ def parse_cmd(sender,cmd):
 
             #TODO cast result to float
             add_result = db_helper.check_add_game(white,black,result,sender,comment)
-
-            myroom.send_text(msg_result+"\n"+add_result)
+            if add_result.startswith("fehler"):
+                myroom.send_text(add_result)
+            else:
+                myroom.send_text(msg_result+"\n"+add_result)
 
 def listenhandler(err):
     log("error aus listenhandler:" +str(err.args))
