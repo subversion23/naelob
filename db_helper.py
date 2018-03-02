@@ -101,8 +101,6 @@ def add_game(white,black,result,creator,comment=""):
 
     set_elo(w_id,new_w_elo)
     set_elo(b_id,new_b_elo)
-    #w_elo = execute_q("SELECT )
-
     return ("Punkte Änderung weiß: {0}  schwarz: {1}".format(w_chg,b_chg))
 
 
@@ -124,7 +122,6 @@ def get_elolist():
     <th>Punkte</th>
     </tr>
     '''
-
     i=1
     for e in result:
         text +=  "{0}. {1}  -  {2} Punkte\n".format(i,e[0],e[1])
@@ -151,7 +148,6 @@ def get_games(number=5,player=None):
         date = date.strftime("%d.%m.%Y - %H:%M")
         result_list.append('{0} gegen {1}   Ergebnis: {2} am {3} Uhr - {5} - [{4}]'.format(w,b,g_result,date,g_id,comment))
 
-    #playerid to name
     return '\n'.join(result_list)
 
 
@@ -159,7 +155,7 @@ def rebuild_list():
     query='SELECT white_id,black_id,result,date from games WHERE removed = 0 OR removed is NULL ORDER BY date ASC'
     games = execute_q(query)
     players = execute_q("SELECT id,points,name from players")
-    playernames = {a:n for a,b,n in players}
+    #playernames = {a:n for a,b,n in players}
     players = {a:1500 for a,b,n in players}
     for game in games:
         w = game[0]
@@ -170,11 +166,8 @@ def rebuild_list():
         w_chg,b_chg = calc_elo(elo_w, elo_b, r)
         players[w] += w_chg
         players[b] += b_chg
-
     for i,p in players.items():
         set_elo(i,p)
-
-    #print (playernames)
     return players
 
 
@@ -189,15 +182,9 @@ def remove_game(game_id,sender="system",comment=""):
 def remove_player(player_id):
     query="SELECT id FROM games WHERE white_id=? OR black_id=?"
     games = execute_q(query,(player_id,player_id))
-    print (games)
-    #if games == 1:
-    #    remove_game(games)
     for g in games:
         remove_game(g[0])
-
     #TODO REMOVE PLAYER
-
-
     #rebuild_list() #comment here in and out in remove_game
 
 

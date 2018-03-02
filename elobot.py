@@ -27,12 +27,7 @@ Partie eintragen:
 
 #TODO:
 #    - log prio
-#    - regex
-#    - ext syntax for cmds: "!cmd x", addgame: "elo a-b x"
-#    - event sender to DB
 #    - addplayer can map to matrix_name + "!addme" cmd
-#    - num games - remove game by num if sender is player or creator
-#    - create new elo list from games history
 #    - comments: @mom. in games. --> put to own table ?
 
 #class myroom():
