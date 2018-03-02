@@ -13,13 +13,16 @@ myroom = client.join_room(room_id)
 
 help_text=''' == H I L F E == \n
 Partie eintragen:
-!elo Weiß-Schwarz [0,0.5,1] 1 = Sieg weiß; 0 = Sieg schwarz; 0.5 Unentschieden
+!elo Weiß-Schwarz {0, 0.5, 1} [Kommentar] - 1 = Sieg weiß; 0 = Sieg schwarz; 0.5 Unentschieden
 
-!elo stats, liste = ruft die aktuelle Rangliste ab
+!stats, liste = ruft die aktuelle Rangliste ab
 
-!elo addplayer <name>
+!addplayer <name>
 
-!elo games  - gibt eine Liste der letzten 5 Spiele zurück
+!games  - gibt eine Liste der letzten 5 Spiele zurück
+
+!delgame x  -löscht game x(nummer aus !games) und berechnet elo liste neu.
+
 '''
 
 #TODO:
@@ -76,7 +79,6 @@ def parse_cmd(sender,cmd):
             return
 
         elif cmd.startswith("games"):
-
             myroom.send_text(db_helper.get_games())
             return
 
@@ -92,7 +94,9 @@ def parse_cmd(sender,cmd):
 
         elif cmd.startswith("delgame"):
             try:
-                g_id = cmd.split()[1]
+                cmds = cmd.split()
+                g_id = cmds[1]
+                comment = "[del:"+cmd[2] + "]"
             except ValueError:
                 myroom.send_text("Fehler bei cmd parse")
             if (db_helper.remove_game(g_id,sender)):

@@ -90,7 +90,6 @@ def add_game(white,black,result,creator,comment=""):
     w_id, w_elo = execute_q(query,(white,))[0]
     b_id, b_elo = execute_q(query,(black,))[0]
 
-
     #Add Game
     query = ('INSERT INTO games(white_id,black_id,result,comment,date,creator) VALUES(?,?,?,?,?,?);')
     execute_q(query,(w_id,b_id,result,comment,dt,creator))
@@ -137,7 +136,7 @@ def get_elolist():
 
 
 def get_games(number=5,player=None):
-    query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 ORDER BY date DESC LIMIT ?'
+    query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 OR removed is NULL ORDER BY date DESC LIMIT ?'
     games = execute_q(query,(number,))
     players = dict(execute_q("SELECT id,name from players"))
     result_list = []
@@ -147,7 +146,7 @@ def get_games(number=5,player=None):
         g_result = g[2]
         date = g[3][:16]
         g_id = g[4]
-        comment = g[5]
+        comment = g[5] if g[5] is not None else ""
         date = datetime.datetime.strptime(date,"%Y-%m-%d %H:%M")
         date = date.strftime("%d.%m.%Y - %H:%M")
         result_list.append('{0} gegen {1}   Ergebnis: {2} am {3} Uhr - {5} - [{4}]'.format(w,b,g_result,date,g_id,comment))
@@ -157,7 +156,7 @@ def get_games(number=5,player=None):
 
 
 def rebuild_list():
-    query='SELECT white_id,black_id,result,date from games WHERE removed = 0 ORDER BY date ASC'
+    query='SELECT white_id,black_id,result,date from games WHERE removed = 0 OR removed is NULL ORDER BY date ASC'
     games = execute_q(query)
     players = execute_q("SELECT id,points,name from players")
     playernames = {a:n for a,b,n in players}
@@ -174,12 +173,14 @@ def rebuild_list():
 
     for i,p in players.items():
         set_elo(i,p)
+
     #print (playernames)
     return players
 
 
-def remove_game(game_id,sender="system"):
+def remove_game(game_id,sender="system",comment=""):
     dt = datetime.datetime.now()
+    #TODO add comment to db
     query='UPDATE games SET removed = 1, removed_at=?, removed_by=? where id=?'
     execute_q(query,(dt,sender,game_id))
     rebuild_list()
@@ -193,6 +194,10 @@ def remove_player(player_id):
     #    remove_game(games)
     for g in games:
         remove_game(g[0])
+
+    #TODO REMOVE PLAYER
+
+
     #rebuild_list() #comment here in and out in remove_game
 
 
