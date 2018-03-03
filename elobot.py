@@ -141,15 +141,10 @@ try:
 except Exception as e:
     print("Aha! "+ e.args)
 
-try:
-    get_input = raw_input
-except NameError:
-    get_input = input
-
 #====== MAIN LOOP: ==========
 bRun = True
 while bRun:
-    msg = get_input()
+    msg = input()
     #TEST
     #time.sleep(0.5)
     if msg == "/quit":
