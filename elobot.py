@@ -7,7 +7,15 @@ import re
 from config import user,password,room_id
 
 
-client =NaelobClient("https://matrix.org",user,password,room_id)
+#client =NaelobClient("https://matrix.org",user,password,room_id)
+
+class client():
+    def send_text(text):
+        print(text)
+    def start_listener(dummy):
+        pass
+
+
 
 help_text=''' == H I L F E == \n
 Partie eintragen:
@@ -28,9 +36,6 @@ Partie eintragen:
 #    - addplayer can map to matrix_name + "!addme" cmd
 #    - comments: @mom. in games. --> put to own table ?
 
-#class myroom():
-#    def send_text(text):
-#        print(text)
 
 def on_message(text,sender):
     log(text)
@@ -64,9 +69,25 @@ def parse_cmd(sender,cmd):
             #myroom.send_html(liste)
             return
 
+        #TODO !games [n, p1[-p2]]
         elif cmd.startswith("games"):
-            client.send_text(db_helper.get_games())
-            return
+            #gp = r"games ((?P<n>\d{1,2})|((?P<p1>\w+)(?:-(?P<p2>\w+))*))"
+            #gp = r"games (((?P<p1>[a-z])(?:-(?P<p2>[a-z]))*)|(?P<n>\d{1,2}))"
+            gp = r"games (((?P<p1>[a-z]+)(?:-(?P<p2>[a-z]+))?)? *(?P<n>\d{1,2})?)"
+            gm = re.search(gp,cmd)
+            n=5
+            p1=None
+            p2=None
+            if gm is not None:
+                if gm.group("n") is not None:
+                    n = gm.group("n")
+                if gm.group("p1") is not None:
+                    p1 = gm.group("p1")
+                if gm.group("p2") is not None:
+                    p2 = gm.group("p2")
+
+            client.send_text(db_helper.get_games(number=n,player1=p1,player2=p2))
+            return gm # <-debug
 
         elif cmd.startswith("addplayer"):
             playerdata = cmd.split(' ')

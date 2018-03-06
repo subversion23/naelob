@@ -132,9 +132,15 @@ def get_elolist():
     #return html+"</table></html>"
 
 
-def get_games(number=5,player=None):
+def get_games(number=5,player1=None,player2=None):
+    #q2 = ('SELECT white_id,black_id,result,date,id,comment from games '
+    #         'WHERE (removed = 0 OR removed is NULL) AND (white=? OR black=?) ORDER BY date DESC LIMIT ?')
+    #if player1 is not None or player2 is not None:
+    #    games = execute_q(q2,(player1,player2,number))
+    #else:
     query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 OR removed is NULL ORDER BY date DESC LIMIT ?'
     games = execute_q(query,(number,))
+
     players = dict(execute_q("SELECT id,name from players"))
     result_list = []
     for g in games:
