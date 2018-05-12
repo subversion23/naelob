@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
+
+from matrix_client.client import MatrixClient
 #from matrix_python_sdk.matrix_client.client import MatrixClient
-from my_matrix_client import NaelobClient
+#from my_matrix_client import NaelobClient
 import db_helper
 from logger import log
 import re
 from config import user,password,room_id
+import time
 
+client =MatrixClient("https://matrix.org")
+token = client.login_with_password(username=user, password=password)
+myroom = client.join_room(room_id)
 
-#client =NaelobClient("https://matrix.org",user,password,room_id)
-
-class client():
-    def send_text(text):
-        print(text)
-    def start_listener(dummy):
-        pass
+#class client():
+#    def send_text(text):
+#        print(text)
+#    def start_listener(dummy):
+#        pass
 
 
 
@@ -37,16 +41,20 @@ Partie eintragen:
 #    - comments: @mom. in games. --> put to own table ?
 
 
-def on_message(text,sender):
-    log(text)
-    text = text.strip().lower() #TODO comments NOT
-    #msg: !elo W-B p
-    if text.startswith("!elo"):
-        cmd = text.replace("!elo","").lstrip()
-        parse_cmd(sender,cmd)
-    elif text.startswith("!"):
-        cmd = text.replace("!","").lstrip()
-        parse_cmd(sender,cmd)
+def on_message(room,event):
+    if event['type'] == "m.room.message":
+        if event['content']['msgtype'] == "m.text":
+            sender = event['sender']
+            text = event['content']['body']
+
+            text = text.strip().lower() #TODO comments NOT
+            #msg: !elo W-B p
+            if text.startswith("!elo"):
+                cmd = text.replace("!elo","").lstrip()
+                parse_cmd(sender,cmd)
+            elif text.startswith("!"):
+                cmd = text.replace("!","").lstrip()
+                parse_cmd(sender,cmd)
 
 
 def parse_cmd(sender,cmd):
@@ -55,17 +63,17 @@ def parse_cmd(sender,cmd):
         log("cmd:"+cmd)
 
         if cmd.startswith("quit"):
-            client.send_text("baba")
+            myroom.send_text("baba")
             client.close()
             return
 
         elif cmd.startswith("help"): # in cmd:
-            client.send_text(help_text)
+            myroom.send_text(help_text)
             return
 
         elif cmd.startswith("stats") or cmd.startswith("list"):
             liste = db_helper.get_elolist()
-            client.send_text("{0}".format(liste))
+            myroom.send_text("{0}".format(liste))
             #myroom.send_html(liste)
             return
 
@@ -86,17 +94,17 @@ def parse_cmd(sender,cmd):
                 if gm.group("p2") is not None:
                     p2 = gm.group("p2")
 
-            client.send_text(db_helper.get_games(number=n,player1=p1,player2=p2))
-            return gm # <-debug
+            myroom.send_text(db_helper.get_games(number=n,player1=p1,player2=p2))
+            return #gm # <-debug
 
         elif cmd.startswith("addplayer"):
             playerdata = cmd.split(' ')
             name = playerdata[1]
 
             if db_helper.create_player(name,sender):
-                client.send_text("Neuen Spieler {} erstellt.".format(name))
+                myroom.send_text("Neuen Spieler {} erstellt.".format(name))
             else:
-                client.send_text("Fehler beim erstellen von neuen Spieler {}.".format(name))
+                myroom.send_text("Fehler beim erstellen von neuen Spieler {}.".format(name))
             return
 
         elif cmd.startswith("delgame"):
@@ -105,25 +113,25 @@ def parse_cmd(sender,cmd):
                 g_id = cmds[1]
                 comment = "[del:"+cmd[2] + "]"
             except ValueError:
-                client.send_text("Fehler bei cmd parse")
+                myroom.send_text("Fehler bei cmd parse")
             if (db_helper.remove_game(g_id,sender)):
-                client.send_text("Spiel {0} aus der Wertung entfernt.".format(g_id))
+                myroom.send_text("Spiel {0} aus der Wertung entfernt.".format(g_id))
 
         #cmd = new game TODO: Error handling!
         elif cmd == "":
-            client.send_text("JA?")
+            myroom.send_text("JA?")
         else: #cmd Processing:
             #(?P<white>) ?- ?(?P<black>)
             p = re.compile("(?P<white>\w+) *- *(?P<black>\w+) +(?P<result>\S{1,3}) *(?P<comment>.*$)")
             m = p.search(cmd)
             if m == None:
-                client.send_text("Fehler in cmd parse")
+                myroom.send_text("Fehler in cmd parse")
                 log("Fehler in cmd parse. cmd:" + cmd)
                 return
             else:
                 white,black,result,comment = m.groups()
 
-            msg_result = "Partie {0} (weiß)  gegen {1} (schwarz): ".format(white,black)
+            msg_result = "Partie {0} (weiß)  gegen {1} (schwarz):\n".format(white,black)
 
             if result == "1":
                 msg_result += "{} gewinnt.".format(white)
@@ -136,18 +144,34 @@ def parse_cmd(sender,cmd):
                 msg_result += "Unentschieden."
             else:
                 #Wrong Result
-                client.send_text("Fehler: Falsches Ergebnis!")
+                myroom.send_text("Fehler: Falsches Ergebnis!")
                 return
 
             add_result = db_helper.check_add_game(white,black,result,sender,comment)
             if add_result.startswith("fehler"):
-                client.send_text(add_result)
+                myroom.send_text(add_result)
             else:
-                client.send_text(msg_result+"\n"+add_result)
+                myroom.send_text(msg_result+"\n"+add_result)
+
+myroom.add_listener(on_message)
+client.start_listener_thread()
+myroom.send_text("Naelob returns!")
+
+try:
+    get_input = raw_input
+except NameError:
+    get_input = input
+
+#====== MAIN LOOP: ==========
+while True:
+    msg = get_input()
+    #TEST
+    #time.sleep(0.3)
+    if msg == "/quit":
+        break
 
 
-client.send_text("Naelob returns!")
-client.start_listener(on_message)
+client.stop_listener_thread()
+myroom.send_text("Naelob verabschiedet sich und geht offline.")
 
-
-
+client.logout()
