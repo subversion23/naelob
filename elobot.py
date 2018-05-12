@@ -29,7 +29,7 @@ Partie eintragen:
 
 !addplayer <name>
 
-!games  - gibt eine Liste der letzten 5 Spiele zurück
+!games [spieler1] - [spieler2] [anzahl] - gibt eine Liste der letzten 5 Spiele zurück
 
 !delgame x  -löscht game x(nummer aus !games) und berechnet elo liste neu.
 

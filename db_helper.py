@@ -141,7 +141,7 @@ def get_games(number=5,player1=None,player2=None):
     query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 OR removed is NULL ORDER BY date DESC LIMIT ?'
     games = execute_q(query,(number,))
 
-    players = dict(execute_q("SELECT id,name from players"))
+    players = dict(execute_q("SELECT id,name from players")) #BUG: Select only players in params! TODO
     result_list = []
     for g in games:
         w = players[g[0]]
