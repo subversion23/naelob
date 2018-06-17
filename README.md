@@ -3,8 +3,8 @@
 matrix client bot with elo rating system for Nachtasyl-chess 
 
 
-##Installation:
-Create a config.py in the path:
+## Installation:  
+Create a config.py in the path:  
 ```
 user=""
 password=""
