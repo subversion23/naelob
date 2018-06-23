@@ -8,18 +8,17 @@ from logger import log
 import re
 from config import user,password,room_id
 import time
+import requests
 
-client =MatrixClient("https://matrix.org")
+client = MatrixClient("https://matrix.org")
 token = client.login_with_password(username=user, password=password)
 myroom = client.join_room(room_id)
 
-#class client():
+# class client():
 #    def send_text(text):
 #        print(text)
 #    def start_listener(dummy):
 #        pass
-
-
 
 help_text=''' == H I L F E == \n
 Partie eintragen:
@@ -41,25 +40,47 @@ Partie eintragen:
 #    - comments: @mom. in games. --> put to own table ?
 
 
+
+def save_image(event):
+    # mxc://matrix.org/ZNFEjebDtrWuimuXHEAzdRez"
+    url = event['content']['url']
+    fname = event['content']['body']
+    # https://matrix.org/_matrix/media/v1/download/matrix.org/ZNFEjebDtrWuimuXHEAzdRez
+    prefixv1 =  "https://matrix.org/_matrix/media/v1/download/"
+    url = prefixv1 + url.replace("mxc://","")
+    try:
+        resp = requests.get(url)
+    except Exception(ex):
+        print (ex.message)
+
+    with open(fname,"wb") as fh:
+        fh.write(resp.content)
+    resp.close()
+
+
+
 def on_message(room,event):
     if event['type'] == "m.room.message":
         if event['content']['msgtype'] == "m.text":
             sender = event['sender']
             text = event['content']['body']
 
-            text = text.strip().lower() #TODO comments NOT
-            #msg: !elo W-B p
+            text = text.strip().lower()  # TODO comments NOT
+            # msg: !elo W-B p
             if text.startswith("!elo"):
-                cmd = text.replace("!elo","").lstrip()
-                parse_cmd(sender,cmd)
-            elif text.startswith("!"):
-                cmd = text.replace("!","").lstrip()
-                parse_cmd(sender,cmd)
+                cmd = text.replace("!elo", "").lstrip()
+                parse_cmd(sender, cmd)
+            elif text.startswith("!") and not text.startswith("!github"):  # Github bot hack
+                cmd = text.replace("!", "").lstrip()
+                parse_cmd(sender, cmd)
+        if event['content']['msgtype'] == "m.image":
+            save_image(event)
 
 
-def parse_cmd(sender,cmd):
-        #Check for cmds
-        #r" *!elo (?P<white>) ?- ?(?P<black>) ","!elo a-b 1 bla bla"
+
+def parse_cmd(sender, cmd):
+        # Check for cmds
+        # r" *!elo (?P<white>) ?- ?(?P<black>) ","!elo a-b 1 bla bla"
         log("cmd:"+cmd)
 
         if cmd.startswith("quit"):
@@ -74,13 +95,13 @@ def parse_cmd(sender,cmd):
         elif cmd.startswith("stats") or cmd.startswith("list"):
             liste = db_helper.get_elolist()
             myroom.send_text("{0}".format(liste))
-            #myroom.send_html(liste)
+            # myroom.send_html(liste)
             return
 
         #TODO !games [n, p1[-p2]]
         elif cmd.startswith("games"):
-            #gp = r"games ((?P<n>\d{1,2})|((?P<p1>\w+)(?:-(?P<p2>\w+))*))"
-            #gp = r"games (((?P<p1>[a-z])(?:-(?P<p2>[a-z]))*)|(?P<n>\d{1,2}))"
+            # gp = r"games ((?P<n>\d{1,2})|((?P<p1>\w+)(?:-(?P<p2>\w+))*))"
+            # gp = r"games (((?P<p1>[a-z])(?:-(?P<p2>[a-z]))*)|(?P<n>\d{1,2}))"
             gp = r"games (((?P<p1>[a-z]+)(?:-(?P<p2>[a-z]+))?)? *(?P<n>\d{1,2})?)"
             gm = re.search(gp,cmd)
             n=5
@@ -94,8 +115,8 @@ def parse_cmd(sender,cmd):
                 if gm.group("p2") is not None:
                     p2 = gm.group("p2")
 
-            myroom.send_text(db_helper.get_games(number=n,player1=p1,player2=p2))
-            return #gm # <-debug
+            myroom.send_text(db_helper.get_games(number=n, player1=p1, player2=p2))
+            return # gm # <-debug
 
         elif cmd.startswith("addplayer"):
             playerdata = cmd.split(' ')
