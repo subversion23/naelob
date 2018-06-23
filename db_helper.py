@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 import datetime
+from config import media_path
+from logger import log
 
 
 def execute_q(query,data=""):
@@ -8,19 +10,21 @@ def execute_q(query,data=""):
         con = sqlite3.connect("naelo.db")
         cur = con.cursor()
     except sqlite3.Error as err:
-        print (err.args)
+        log(err.args)
         return 1
     try:
         r = cur.execute(query,data)
     except sqlite3.Error as err:
-        print ("DB error: "+err.args[0])
-        print ("Query:" + query + " ; " +str(data))
+        log("DB error: "+err.args[0])
+        log("Query:" + query + " ; " +str(data))
         con.close()
         return 1
+
     #if data != None:
+    con.close()
     data = r.fetchall()
     con.commit()
-    con.close()
+
     return data
 
 
@@ -192,6 +196,32 @@ def remove_player(player_id):
         remove_game(g[0])
     #TODO REMOVE PLAYER
     #rebuild_list() #comment here in and out in remove_game
+
+# ---- Picture Handling -------------------------------------------------------
+
+pic_list = []
+last_pic = ""
+
+def pic_created(fname):
+    last_pic = fname
+    log("pic created: " +last_pic)
+
+def pic_to_game(gamenr):
+    if last_pic is "":
+        return "Kein Bild vorhanden"
+
+    # Wenn keine nr angegeben dann nimm letztes spiel
+    if gamenr == None:
+        gamenr = execute_q("SELECT MAX(id) FROM games;")[0][0]
+
+    query = "UPDATE games SET pictures=? where id=?"
+    execute_q(query,(last_pic,gamenr))
+    msg = "{0} zu Spiel {1} hinzugefügt.".format(last_pic,gamenr)
+    log(msg)
+    return msg
+
+
+
 
 
 
