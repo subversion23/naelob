@@ -11,21 +11,42 @@ def execute_q(query,data=""):
         cur = con.cursor()
     except sqlite3.Error as err:
         log(err.args)
+        con.close()
         return 1
     try:
         r = cur.execute(query,data)
     except sqlite3.Error as err:
         log("DB error: "+err.args[0])
-        log("Query:" + query + " ; " +str(data))
+        log("Error Query:" + query + " ; " +str(data))
         con.close()
         return 1
-
     #if data != None:
-    con.close()
     data = r.fetchall()
     con.commit()
-
+    con.close()
     return data
+
+def execute_many_q(querys,data):
+    try:
+        con = sqlite3.connect("naelo.db")
+        cur = con.cursor()
+    except sqlite3.Error as err:
+        log(err.args)
+        con.close()
+        return 1
+    try:
+        r = cur.executemany(querys,data)
+    except sqlite3.Error as err:
+        log("DB error: "+err.args[0])
+        log("Error Query:" + querys + " ; " +str(data))
+        con.close()
+        return 1
+    #if data != None:
+    data = r.fetchall()
+    con.commit()
+    con.close()
+    return data
+
 
 
 def create_db():
@@ -199,24 +220,39 @@ def remove_player(player_id):
 
 # ---- Picture Handling -------------------------------------------------------
 
-pic_list = []
-last_pic = ""
+class PictureHandler():
+    def __init__(self):
+        self.last_pic = ""
+
+PH = PictureHandler()
+# pic_list = [] # vorerst billige Lösung  mit einem Pic
+
+
+def pic_to_db(fname,gamenr):
+    pass
 
 def pic_created(fname):
-    last_pic = fname
-    log("pic created: " +last_pic)
+    PH.last_pic = fname
+    log("pic created: " +PH.last_pic)
 
 def pic_to_game(gamenr):
-    if last_pic is "":
+    pic = ""
+    if PH.last_pic == "":
         return "Kein Bild vorhanden"
+    else:
+        pic = PH.last_pic
 
     # Wenn keine nr angegeben dann nimm letztes spiel
     if gamenr == None:
         gamenr = execute_q("SELECT MAX(id) FROM games;")[0][0]
 
+    #query = "update games set pictures = ((select pictures from games where id = ?) || ', ' || ||? ) where id = ?;"
+    #pics = execute_q("SELECT pictures from games where id = ?",gamenr)
+    # ...add - for p in pics: insert in table
+
     query = "UPDATE games SET pictures=? where id=?"
-    execute_q(query,(last_pic,gamenr))
-    msg = "{0} zu Spiel {1} hinzugefügt.".format(last_pic,gamenr)
+    execute_q(query,(gamenr,pic,gamenr))
+    msg = "{0} zu Spiel {1} hinzugefügt.".format(pic,gamenr)
     log(msg)
     return msg
 
