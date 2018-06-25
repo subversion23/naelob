@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 import datetime
-from config import media_path
+from config import media_path, DEBUG
 from logger import log
 
 
@@ -246,12 +246,13 @@ def pic_to_game(gamenr):
     if gamenr == None:
         gamenr = execute_q("SELECT MAX(id) FROM games;")[0][0]
 
-    #query = "update games set pictures = ((select pictures from games where id = ?) || ', ' || ||? ) where id = ?;"
-    #pics = execute_q("SELECT pictures from games where id = ?",gamenr)
-    # ...add - for p in pics: insert in table
+    #update games set pictures = (select IFNULL(pictures || 'Hi' || ',','Hi' || ',') from games where id = 78) where id = 78
+    #why not?
+    query = "update games set pictures = (select IFNULL(pictures || ':0' || ',',':0' || ',') from games where id = :1) where id = :1" #why not?
+    query = "update games set pictures = (select IFNULL(pictures || '{0}' || ',','{0}' || ',') from games where id = {1}) where id = {1}".format(pic,gamenr)
+    execute_q(query)
+    #query = "UPDATE games SET pictures=? where id=?"
 
-    query = "UPDATE games SET pictures=? where id=?"
-    execute_q(query,(gamenr,pic,gamenr))
     msg = "{0} zu Spiel {1} hinzugefügt.".format(pic,gamenr)
     log(msg)
     return msg
@@ -259,10 +260,9 @@ def pic_to_game(gamenr):
 
 
 
-
-
-
-
+if DEBUG:
+    PH.last_pic = "VectorImage_2018-06-23_030938.jpg"
+    pic_to_game(79)
 
 
 
