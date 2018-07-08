@@ -63,7 +63,6 @@ def save_image(event):
     return fname
 
 
-
 def on_message(room,event):
     if event['type'] == "m.room.message":
         if event['content']['msgtype'] == "m.text":

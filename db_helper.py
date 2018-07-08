@@ -57,7 +57,7 @@ def create_db():
 
     query = ('CREATE TABLE IF NOT EXISTS games(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
              'white_id INTEGER NOT NULL, black_id INTEGER NOT NULL, result REAL NOT NULL,'
-             'comment TEXT, date TEXT NOT NULL, creator TEXT NOT NULL,'
+             'comment TEXT, pictures TEXT, date TEXT NOT NULL, creator TEXT NOT NULL,'
              'removed INT DEFAULT 0, removed_by TEXT, removed_at TEXT);')
     execute_q(query)
 
@@ -139,20 +139,13 @@ def get_elolist():
     result = execute_q(query)
     result.sort(key=lambda t:t[1],reverse=True)
     text = "Wertung\n\n"
-    html = "<html> Wertung:<br> "
-    html += '''<table>
-    <tr>
-    <th>Platz</th>
-    <th>Name</th>
-    <th>Punkte</th>
-    </tr>
-    '''
+
     i=1
     for e in result:
         text +=  "{0}. {1}  -  {2} Punkte\n".format(i,e[0],e[1])
         #html += "<tr> <td> {0}</td> <td>{1}</td> <td>{2}Punkte</td> <tr>".format(i,e[0],e[1])
         i+=1
-    #TODO Make HTML table
+
     return text
     #return html+"</table></html>"
 
@@ -246,18 +239,15 @@ def pic_to_game(gamenr):
     if gamenr == None:
         gamenr = execute_q("SELECT MAX(id) FROM games;")[0][0]
 
-    #update games set pictures = (select IFNULL(pictures || 'Hi' || ',','Hi' || ',') from games where id = 78) where id = 78
     #why not?
-    query = "update games set pictures = (select IFNULL(pictures || ':0' || ',',':0' || ',') from games where id = :1) where id = :1" #why not?
+    #query = "update games set pictures = (select IFNULL(pictures || ':0' || ',',':0' || ',') from games where id = :1) where id = :1" #why not?
+
     query = "update games set pictures = (select IFNULL(pictures || '{0}' || ',','{0}' || ',') from games where id = {1}) where id = {1}".format(pic,gamenr)
     execute_q(query)
-    #query = "UPDATE games SET pictures=? where id=?"
 
     msg = "{0} zu Spiel {1} hinzugefügt.".format(pic,gamenr)
     log(msg)
     return msg
-
-
 
 
 if DEBUG:
