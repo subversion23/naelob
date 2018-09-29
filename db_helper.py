@@ -151,16 +151,52 @@ def get_elolist():
 
 
 def get_games(number=5,player1=None,player2=None):
-    #q2 = ('SELECT white_id,black_id,result,date,id,comment from games '
-    #         'WHERE (removed = 0 OR removed is NULL) AND (white=? OR black=?) ORDER BY date DESC LIMIT ?')
-    #if player1 is not None or player2 is not None:
-    #    games = execute_q(q2,(player1,player2,number))
-    #else:
-    query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 OR removed is NULL ORDER BY date DESC LIMIT ?'
-    games = execute_q(query,(number,))
+    # TODO make queries nicer
+    games = []
+    if player1 is None and player2 is None:
+        query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 OR removed is NULL ORDER BY date DESC LIMIT ?'
+        games = execute_q(query,(number,))
+    # P1
+    elif player1 is not None and player2 is None:
+
+        query = """SELECT white_id,black_id,result,date,id,comment from games WHERE
+        (removed = 0 OR removed is NULL)
+        	AND (
+            white_id=(select id from players where name = '{0}')
+        	OR black_id=(select id from players where name = '{0}')
+            )
+         ORDER BY date DESC LIMIT ?""".format(player1)
+        games = execute_q(query,(number,))
+
+    # P1+P2
+    elif player1 is not None and player2 is not None:
+        query = """
+                    SELECT white_id, black_id, result,date,id,comment from games WHERE
+            (removed = 0 OR removed is NULL)
+            	AND (
+            		white_id=(select id from players where name = '{0}')
+            		OR black_id=(select id from players where name = '{0}')
+            		)
+            		AND (
+            		white_id=(select id from players where name = '{1}')
+            		OR black_id=(select id from players where name = '{1}')
+            		)
+            ORDER BY date DESC
+            LIMIT ?
+            """.format(player1,player2)
+        games = execute_q(query,(number,))
+
+
+    #query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 OR removed is NULL ORDER BY date DESC LIMIT ?'
+    #games = execute_q(query,(number,))
+
+    #DEBUG:
+    #print (games)
 
     players = dict(execute_q("SELECT id,name from players")) #BUG: Select only players in params! TODO
+
     result_list = []
+
     for g in games:
         w = players[g[0]]
         b = players[g[1]]
@@ -250,9 +286,9 @@ def pic_to_game(gamenr):
     return msg
 
 
-if DEBUG:
-    PH.last_pic = "VectorImage_2018-06-23_030938.jpg"
-    pic_to_game(79)
+#if DEBUG:
+#    PH.last_pic = "VectorImage_2018-06-23_030938.jpg"
+#    pic_to_game(79)
 
 
 
