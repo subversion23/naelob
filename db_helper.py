@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 import datetime
+from config import media_path, DEBUG
+from logger import log
 
 
 def execute_q(query,data=""):
@@ -8,13 +10,14 @@ def execute_q(query,data=""):
         con = sqlite3.connect("naelo.db")
         cur = con.cursor()
     except sqlite3.Error as err:
-        print (err.args)
+        log(err.args)
+        con.close()
         return 1
     try:
         r = cur.execute(query,data)
     except sqlite3.Error as err:
-        print ("DB error: "+err.args[0])
-        print ("Query:" + query + " ; " +str(data))
+        log("DB error: "+err.args[0])
+        log("Error Query:" + query + " ; " +str(data))
         con.close()
         return 1
     #if data != None:
@@ -22,6 +25,28 @@ def execute_q(query,data=""):
     con.commit()
     con.close()
     return data
+
+def execute_many_q(querys,data):
+    try:
+        con = sqlite3.connect("naelo.db")
+        cur = con.cursor()
+    except sqlite3.Error as err:
+        log(err.args)
+        con.close()
+        return 1
+    try:
+        r = cur.executemany(querys,data)
+    except sqlite3.Error as err:
+        log("DB error: "+err.args[0])
+        log("Error Query:" + querys + " ; " +str(data))
+        con.close()
+        return 1
+    #if data != None:
+    data = r.fetchall()
+    con.commit()
+    con.close()
+    return data
+
 
 
 def create_db():
@@ -32,7 +57,7 @@ def create_db():
 
     query = ('CREATE TABLE IF NOT EXISTS games(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
              'white_id INTEGER NOT NULL, black_id INTEGER NOT NULL, result REAL NOT NULL,'
-             'comment TEXT, date TEXT NOT NULL, creator TEXT NOT NULL,'
+             'comment TEXT, pictures TEXT, date TEXT NOT NULL, creator TEXT NOT NULL,'
              'removed INT DEFAULT 0, removed_by TEXT, removed_at TEXT);')
     execute_q(query)
 
@@ -114,35 +139,64 @@ def get_elolist():
     result = execute_q(query)
     result.sort(key=lambda t:t[1],reverse=True)
     text = "Wertung\n\n"
-    html = "<html> Wertung:<br> "
-    html += '''<table>
-    <tr>
-    <th>Platz</th>
-    <th>Name</th>
-    <th>Punkte</th>
-    </tr>
-    '''
+
     i=1
     for e in result:
         text +=  "{0}. {1}  -  {2} Punkte\n".format(i,e[0],e[1])
         #html += "<tr> <td> {0}</td> <td>{1}</td> <td>{2}Punkte</td> <tr>".format(i,e[0],e[1])
         i+=1
-    #TODO Make HTML table
+
     return text
     #return html+"</table></html>"
 
 
 def get_games(number=5,player1=None,player2=None):
-    #q2 = ('SELECT white_id,black_id,result,date,id,comment from games '
-    #         'WHERE (removed = 0 OR removed is NULL) AND (white=? OR black=?) ORDER BY date DESC LIMIT ?')
-    #if player1 is not None or player2 is not None:
-    #    games = execute_q(q2,(player1,player2,number))
-    #else:
-    query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 OR removed is NULL ORDER BY date DESC LIMIT ?'
-    games = execute_q(query,(number,))
+    # TODO make queries nicer
+    games = []
+    if player1 is None and player2 is None:
+        query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 OR removed is NULL ORDER BY date DESC LIMIT ?'
+        games = execute_q(query,(number,))
+    # P1
+    elif player1 is not None and player2 is None:
+
+        query = """SELECT white_id,black_id,result,date,id,comment from games WHERE
+        (removed = 0 OR removed is NULL)
+        	AND (
+            white_id=(select id from players where name = '{0}')
+        	OR black_id=(select id from players where name = '{0}')
+            )
+         ORDER BY date DESC LIMIT ?""".format(player1)
+        games = execute_q(query,(number,))
+
+    # P1+P2
+    elif player1 is not None and player2 is not None:
+        query = """
+                    SELECT white_id, black_id, result,date,id,comment from games WHERE
+            (removed = 0 OR removed is NULL)
+            	AND (
+            		white_id=(select id from players where name = '{0}')
+            		OR black_id=(select id from players where name = '{0}')
+            		)
+            		AND (
+            		white_id=(select id from players where name = '{1}')
+            		OR black_id=(select id from players where name = '{1}')
+            		)
+            ORDER BY date DESC
+            LIMIT ?
+            """.format(player1,player2)
+        games = execute_q(query,(number,))
+
+
+    #query='SELECT white_id,black_id,result,date,id,comment from games WHERE removed = 0 OR removed is NULL ORDER BY date DESC LIMIT ?'
+    #games = execute_q(query,(number,))
+
+    #DEBUG:
+    #print (games)
 
     players = dict(execute_q("SELECT id,name from players")) #BUG: Select only players in params! TODO
+
     result_list = []
+
     for g in games:
         w = players[g[0]]
         b = players[g[1]]
@@ -193,10 +247,48 @@ def remove_player(player_id):
     #TODO REMOVE PLAYER
     #rebuild_list() #comment here in and out in remove_game
 
+# ---- Picture Handling -------------------------------------------------------
+
+class PictureHandler():
+    def __init__(self):
+        self.last_pic = ""
+
+PH = PictureHandler()
+# pic_list = [] # vorerst billige Lösung  mit einem Pic
 
 
+def pic_to_db(fname,gamenr):
+    pass
+
+def pic_created(fname):
+    PH.last_pic = fname
+    log("pic created: " +PH.last_pic)
+
+def pic_to_game(gamenr):
+    pic = ""
+    if PH.last_pic == "":
+        return "Kein Bild vorhanden"
+    else:
+        pic = PH.last_pic
+
+    # Wenn keine nr angegeben dann nimm letztes spiel
+    if gamenr == None:
+        gamenr = execute_q("SELECT MAX(id) FROM games;")[0][0]
+
+    #why not?
+    #query = "update games set pictures = (select IFNULL(pictures || ':0' || ',',':0' || ',') from games where id = :1) where id = :1" #why not?
+
+    query = "update games set pictures = (select IFNULL(pictures || '{0}' || ',','{0}' || ',') from games where id = {1}) where id = {1}".format(pic,gamenr)
+    execute_q(query)
+
+    msg = "{0} zu Spiel {1} hinzugefügt.".format(pic,gamenr)
+    log(msg)
+    return msg
 
 
+#if DEBUG:
+#    PH.last_pic = "VectorImage_2018-06-23_030938.jpg"
+#    pic_to_game(79)
 
 
 

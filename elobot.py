@@ -7,8 +7,9 @@ import db_helper
 from logger import log
 import re
 from config import user,password,room_id
-import time
+
 import requests
+import datetime
 
 client = MatrixClient("https://matrix.org")
 token = client.login_with_password(username=user, password=password)
@@ -32,6 +33,9 @@ Partie eintragen:
 
 !delgame x  -löscht game x(nummer aus !games) und berechnet elo liste neu.
 
+!addpic [x]  - fügt das letzte hochgeladene Foto zu game x hinzu; ohne x letztes game
+
+
 '''
 
 #TODO:
@@ -40,23 +44,23 @@ Partie eintragen:
 #    - comments: @mom. in games. --> put to own table ?
 
 
-
 def save_image(event):
     # mxc://matrix.org/ZNFEjebDtrWuimuXHEAzdRez"
     url = event['content']['url']
     fname = event['content']['body']
+    #fname =
     # https://matrix.org/_matrix/media/v1/download/matrix.org/ZNFEjebDtrWuimuXHEAzdRez
     prefixv1 =  "https://matrix.org/_matrix/media/v1/download/"
     url = prefixv1 + url.replace("mxc://","")
     try:
         resp = requests.get(url)
-    except Exception(ex):
+    except Exception as ex:
         print (ex.message)
-
     with open(fname,"wb") as fh:
         fh.write(resp.content)
     resp.close()
 
+    return fname
 
 
 def on_message(room,event):
@@ -74,7 +78,9 @@ def on_message(room,event):
                 cmd = text.replace("!", "").lstrip()
                 parse_cmd(sender, cmd)
         if event['content']['msgtype'] == "m.image":
-            save_image(event)
+            fname = save_image(event)
+            db_helper.pic_created(fname)
+
 
 
 
@@ -137,6 +143,15 @@ def parse_cmd(sender, cmd):
                 myroom.send_text("Fehler bei cmd parse")
             if (db_helper.remove_game(g_id,sender)):
                 myroom.send_text("Spiel {0} aus der Wertung entfernt.".format(g_id))
+
+        elif cmd.startswith("addpic"):
+            params = cmd.split()
+            try:
+                gamenr = params[1]
+            except IndexError:
+                gamenr = None
+            msg = db_helper.pic_to_game(gamenr)
+            myroom.send_text(msg)
 
         #cmd = new game TODO: Error handling!
         elif cmd == "":
