@@ -9,7 +9,10 @@ Create a config.py in the path:
 user=""
 password=""
 room_id=""
+media_path = "./media"
+DEBUG=True
 ```
+
 
 
 
