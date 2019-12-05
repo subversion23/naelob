@@ -1,3 +1,7 @@
+# WIP
+Its does its job, but the Code is ugly and the Matrix part is too old.
+Maybe some day i will finish it.
+
 # naelob
 
 matrix client bot with elo rating system for Nachtasyl-chess 
